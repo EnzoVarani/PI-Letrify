@@ -1,8 +1,8 @@
-# Etapa 1: Build
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# Etapa 1: Build (Agora usando o SDK do .NET 9)
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copia apenas o arquivo .csproj primeiro (respeitando a estrutura de pastas da sua imagem)
+# Copia apenas o arquivo .csproj primeiro
 COPY ["pi-projetolivros/pi-projetolivros/pi-projetolivros.csproj", "pi-projetolivros/pi-projetolivros/"]
 
 # Restaura as dependências do projeto
@@ -17,8 +17,8 @@ WORKDIR "/src/pi-projetolivros/pi-projetolivros"
 # Compila o projeto
 RUN dotnet publish "pi-projetolivros.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Etapa 2: Produção (Imagem mais leve apenas para rodar o app)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+# Etapa 2: Produção (Agora usando o Runtime do .NET 9)
+FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 COPY --from=build /app/publish .
 

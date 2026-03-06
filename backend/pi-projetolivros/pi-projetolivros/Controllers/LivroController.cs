@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using pi_projetolivros.DTO;
 using pi_projetolivros.Models;
@@ -59,13 +59,17 @@ public class LivroController : ControllerBase
     public async Task<ActionResult<List<Livro>>> ExplorarLivros(
         [FromQuery] string tema = "fiction",
         [FromQuery] int pagina = 1,
-        [FromQuery] int quantidade = 20)
+        [FromQuery] int quantidade = 20,
+        [FromQuery] string? sort = null,
+        [FromQuery] string? language = null)
     {
 
-        // exemplo: GET /api/livro/livrostema?tema=fantasy&quantidade=10
+        // exemplo: GET /api/livro/livrostema?tema=fantasy&quantidade=10&sort=new&language=por
 
         string temaTratado = Uri.EscapeDataString(tema.Trim().ToLower());
         string url = $"https://openlibrary.org/search.json?subject={temaTratado}&page={pagina}&limit={quantidade}";
+        if (!string.IsNullOrWhiteSpace(sort)) url += $"&sort={Uri.EscapeDataString(sort)}";
+        if (!string.IsNullOrWhiteSpace(language)) url += $"&language={Uri.EscapeDataString(language)}";
 
         var response = await _httpClient.GetAsync(url);
         if (!response.IsSuccessStatusCode)
@@ -86,10 +90,12 @@ public class LivroController : ControllerBase
     public async Task<ActionResult<List<Livro>>> BuscarPorTitulo(
         [FromQuery] string titulo,
         [FromQuery] int pagina = 1,
-        [FromQuery] int quantidade = 20)
+        [FromQuery] int quantidade = 20,
+        [FromQuery] string? sort = null,
+        [FromQuery] string? language = null)
     {
 
-        //exemplo pesquisa: GET /api/livro/livrostitulo?titulo=principe&quantidade=20
+        //exemplo pesquisa: GET /api/livro/livrostitulo?titulo=principe&quantidade=20&sort=new&language=eng
 
 
         if (string.IsNullOrWhiteSpace(titulo))
@@ -98,6 +104,8 @@ public class LivroController : ControllerBase
         string tituloTratado = Uri.EscapeDataString(titulo.Trim().ToLower());
 
         string url = $"https://openlibrary.org/search.json?title={tituloTratado}&page={pagina}&limit={quantidade}";
+        if (!string.IsNullOrWhiteSpace(sort)) url += $"&sort={Uri.EscapeDataString(sort)}";
+        if (!string.IsNullOrWhiteSpace(language)) url += $"&language={Uri.EscapeDataString(language)}";
 
         var response = await _httpClient.GetAsync(url);
         if (!response.IsSuccessStatusCode)
@@ -109,6 +117,40 @@ public class LivroController : ControllerBase
 
         if (resultadoBusca == null || resultadoBusca.Docs == null || !resultadoBusca.Docs.Any())
             return NotFound("Nenhum livro encontrado com este título.");
+
+        var listaDeLivros = ConverterDocsParaLivros(resultadoBusca.Docs);
+        return Ok(listaDeLivros);
+    }
+
+    [HttpGet("livrosautor")]
+    public async Task<ActionResult<List<Livro>>> BuscarPorAutor(
+        [FromQuery] string autor,
+        [FromQuery] int pagina = 1,
+        [FromQuery] int quantidade = 20,
+        [FromQuery] string? sort = null,
+        [FromQuery] string? language = null)
+    {
+        //exemplo pesquisa: GET /api/livro/livrosautor?autor=tolkien&quantidade=20&sort=new
+
+        if (string.IsNullOrWhiteSpace(autor))
+            return BadRequest("O nome do autor para pesquisa não pode estar vazio.");
+
+        string autorTratado = Uri.EscapeDataString(autor.Trim().ToLower());
+
+        string url = $"https://openlibrary.org/search.json?author={autorTratado}&page={pagina}&limit={quantidade}";
+        if (!string.IsNullOrWhiteSpace(sort)) url += $"&sort={Uri.EscapeDataString(sort)}";
+        if (!string.IsNullOrWhiteSpace(language)) url += $"&language={Uri.EscapeDataString(language)}";
+
+        var response = await _httpClient.GetAsync(url);
+        if (!response.IsSuccessStatusCode)
+            return BadRequest("Erro ao buscar livros na Open Library.");
+
+        string jsonString = await response.Content.ReadAsStringAsync();
+
+        var resultadoBusca = JsonSerializer.Deserialize<RecebeTodosOsLivrosDTO>(jsonString);
+
+        if (resultadoBusca == null || resultadoBusca.Docs == null || !resultadoBusca.Docs.Any())
+            return NotFound("Nenhum livro encontrado para este autor.");
 
         var listaDeLivros = ConverterDocsParaLivros(resultadoBusca.Docs);
         return Ok(listaDeLivros);
@@ -132,7 +174,8 @@ public class LivroController : ControllerBase
                 DataPublicacao = doc.PrimeiroAnoPublicacao?.ToString() ?? "Desconhecida",
                 Editora = doc.Editora?.FirstOrDefault() ?? "Editora Desconhecida",
                 Paginas = 0,
-                Temas = string.IsNullOrEmpty(temaPadrao) ? new List<string>() : new List<string> { temaPadrao }
+                Temas = string.IsNullOrEmpty(temaPadrao) ? new List<string>() : new List<string> { temaPadrao },
+                Idiomas = doc.Idioma ?? new List<string>()
             };
             listaDeLivros.Add(meuLivro);
         }

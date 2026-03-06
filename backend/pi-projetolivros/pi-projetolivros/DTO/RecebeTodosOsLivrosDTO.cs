@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace pi_projetolivros.DTO;
 
@@ -27,4 +27,7 @@ public class OpenLibraryPesquisaDoc
 
     [JsonPropertyName("publisher")]
     public List<string> Editora { get; set; }
+
+    [JsonPropertyName("language")]
+    public List<string> Idioma { get; set; }
 }

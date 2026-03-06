@@ -1,4 +1,4 @@
-﻿using pi_projetolivros.DTO;
+using pi_projetolivros.DTO;
 
 namespace pi_projetolivros.Models;
 
@@ -12,6 +12,8 @@ public class Livro
     public string Editora { get; set; }
 
     public List<string> Temas { get; set; } = new List<string>();
+
+    public List<string> Idiomas { get; set; } = new List<string>();
 
 
 }
